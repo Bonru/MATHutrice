@@ -1,62 +1,43 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-# feature/home-page - Student's Home Page Interface 
-
-## Context
-MATHutrice is an educational tutor powered by an LLM to support first-year students in learning mathematical tools.
-To make this system usable, we need a clear and intuitive interface where students can navigate between notions and access training.
-
-## Why :
-A good learning experience depends on how content is presented.
-We want to:
- - provide a simple and structured navigation
- - give visibility on student progression
- - make access to practice fast and engaging
-
-## Solution 
-This branch focuses on front-end development and experimentation:
-- a home page (after authentication, to be implemented)
-- a module page (e.g. Trigonometry) displaying:
-  - a short description of the notion
-  - a global progression bar
-  - evaluated skills (based on Moodle/EPF)
-  - a quick access training button (“M'entraîner”)
-  - progression by subthemes
- This is a visual mockup for the home page :
-<img width="934" height="522" alt="image" src="https://github.com/user-attachments/assets/faa9c372-129c-4414-9160-f5f263b10f12" />
-=======
 # MATHutrice
-=======
-# MATHutrice - front-end branch
->>>>>>> 9d42531 (Revise README for front-end branch details)
-Development of an educational tutor based on an LLM to support first-year students in learning mathematical tools.
 
-This branch is used to develop the front-end by testing diverse solutions. For now, worked-on pages are the first home page and the second module page. The user lands on the home page after authentification (taht will be coded in the future) and clicks on a module, for example "Trigonométrie" that opens a second page where we can see a short description alongs with the global progression bar of the module and the skills evaluated in EPF (those in Moodle), followed by a quick access to training via a button "M'entraîner". Finally we can see a section of progression by subthemes displaying progression specific to each subthemes mentionned in generated exercises.
->>>>>>> 428b8a6 (Update README with front-end development details)
-=======
-# feature/home-page - Student's Home Page Interface 
+An LLM-based maths tutor that helps EPF first-year students practise mathematical tools. A student picks a notion, sits a positioning test, then trains one question at a time; the tutor scores each competence, diagnoses gaps and recommends another notion. A chat answers questions, streamed word by word.
 
-## Context
-MATHutrice is an educational tutor powered by an LLM to support first-year students in learning mathematical tools.
-To make this system usable, we need a clear and intuitive interface where students can navigate between notions and access training.
+It is a FastAPI application (`mathutrice/app.py`) with a SQLModel database (SQLite locally) and one OpenAI-compatible LLM endpoint, Mistral by default.
 
-## Why :
-A good learning experience depends on how content is presented.
-We want to:
- - provide a simple and structured navigation
- - give visibility on student progression
- - make access to practice fast and engaging
+## Run it
 
-## Solution 
-This branch focuses on front-end development and experimentation:
-- a home page (after authentication, to be implemented)
-- a module page (e.g. Trigonometry) displaying:
-  - a short description of the notion
-  - a global progression bar
-  - evaluated skills (based on Moodle/EPF)
-  - a quick access training button (“M'entraîner”)
-  - progression by subthemes
->>>>>>> 91548bc (Update README.md)
- This is a visual mockup for the home page :
-<img width="934" height="522" alt="image" src="https://github.com/user-attachments/assets/faa9c372-129c-4414-9160-f5f263b10f12" />
+Follow the smoke test: **[docs/smoke-test.md](docs/smoke-test.md)**. It installs the project with [uv](https://docs.astral.sh/uv/), creates `.env` from `.env.example`, starts the application and checks it in the browser and from the command line.
+
+Every setting the application reads is listed, with its meaning, in [`.env.example`](.env.example). Your LLM key goes in `.env` only: `.env` is ignored by git and must never be committed.
+
+## Check the package boundaries
+
+```sh
+uv run tach check
+uv run python scripts/check_cycles.py
+```
+
+The rules they enforce are in [mathutrice/README.md](mathutrice/README.md).
+
+## Layout
+
+```
+mathutrice/
+  app.py               the FastAPI application: routes, sign-in, sessions
+  models.py            the database tables
+  database.py          the engine, built from DATABASE_URL
+  fonctions_python/    question generation, grading, chat, LLM client
+  lacune_evaluation/   gap diagnosis by the LLM
+  templates/, static/  the pages
+docs/
+  smoke-test.md        how to run and check a fresh clone
+  adr/                 architecture decisions
+scripts/
+  check_cycles.py      the cycle half of the Architecture Check
+```
+
+The vocabulary of the domain is in [CONTEXT.md](CONTEXT.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE).
