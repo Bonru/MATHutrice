@@ -1,0 +1,24 @@
+# Runs the Architecture Check on every push and every pull request.
+name: CI
+
+# When: every push and every pull request, with no paths or branches filter,
+# so the check can be required by a ruleset (required-checks guide, step 4).
+on:
+  push:
+  pull_request:
+
+jobs:
+  architecture:
+    name: architecture
+    runs-on: ubuntu-latest
+    steps:
+      # Install: the commit being checked.
+      - uses: actions/checkout@v7.0.1
+      # Install: uv, which reads .python-version and uv.lock.
+      - uses: astral-sh/setup-uv@v10.3.0
+      # Install: Python 3.14.7 and the exact versions in uv.lock, tach included.
+      - run: uv sync --locked
+      # Run: no private name crosses a package boundary.
+      - run: uv run tach check
+      # Run: no import cycle between packages.
+      - run: uv run python scripts/check_cycles.py
