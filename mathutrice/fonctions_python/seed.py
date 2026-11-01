@@ -13,7 +13,7 @@ import uuid
 from sqlmodel import Session, SQLModel, select
 
 from mathutrice import models
-from mathutrice.fonctions_python.main import REFERENTIEL
+from mathutrice.referentiel import REFERENTIEL
 
 # Le REFERENTIEL ne porte pas de description, que la table notion exige.
 DESCRIPTIONS = {
