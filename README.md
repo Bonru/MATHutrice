@@ -2,6 +2,8 @@
 
 An LLM-based maths tutor that helps EPF first-year students practise mathematical tools. A student picks a notion, sits a positioning test, then trains one question at a time; the tutor scores each competence, diagnoses gaps and recommends another notion. A chat answers questions, streamed word by word.
 
+Design Document for this fork: [EPF-MDE/MATHutrice#66](https://github.com/EPF-MDE/MATHutrice/issues/66).
+
 It is a FastAPI application (`mathutrice/app.py`) with a SQLModel database (SQLite locally) and one OpenAI-compatible LLM endpoint, Mistral by default.
 
 ## Run it
