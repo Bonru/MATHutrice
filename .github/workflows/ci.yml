@@ -22,3 +22,16 @@ jobs:
       - run: uv run tach check
       # Run: no import cycle between packages.
       - run: uv run python scripts/check_cycles.py
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      # Install: the commit being tested.
+      - uses: actions/checkout@v7.0.1
+      # Install: uv, which reads .python-version and uv.lock.
+      - uses: astral-sh/setup-uv@v10.3.0
+      # Install: Python 3.14.7 and the exact versions in uv.lock, pytest included.
+      - run: uv sync --locked
+      # Run: the tests, with no .env (tests/conftest.py sets dummy settings).
+      - run: uv run pytest
