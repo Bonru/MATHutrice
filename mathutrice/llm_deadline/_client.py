@@ -21,7 +21,7 @@ import openai
 
 # Design Document v1, EPF-MDE/MATHutrice#66, Assumption D: a student in the
 # 30-minute session slot waits at most 5 minutes for an evaluation test.
-EVALUATION_DEADLINE_S = 5 * 60
+EVALUATION_DEADLINE_S = 10 * 60
 
 
 class DeadlineExceeded(Exception):
