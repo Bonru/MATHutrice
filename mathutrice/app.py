@@ -84,6 +84,7 @@ def cleanup_old_conversations():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    seed_missing(engine)
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(cleanup_old_conversations, "interval", hours=1)
@@ -163,6 +164,7 @@ from mathutrice.fonctions_python.type_questions.qro_generator import (  # noqa: 
 from mathutrice.lacune_evaluation.LLM_as_Evaluator import (  # noqa: E402
     diagnostiquer_depuis_competence,
 )
+from mathutrice.fonctions_python.seed import seed_missing  # noqa: E402
 
 app.add_middleware(
         SessionMiddleware,
