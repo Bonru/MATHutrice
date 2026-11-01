@@ -67,7 +67,7 @@ def parse_json(raw: str) -> dict:
 
 
 def call_mistral(
-    prompt: str, notion: str, parse_and_validate, post_process=None
+    prompt: str, notion: str, parse_and_validate, post_process=None, llm=None
 ) -> dict | None:
     """
     Appelle Mistral avec retry automatique (MAX_RETRIES tentatives).
@@ -79,11 +79,13 @@ def call_mistral(
       post_process     : fonction optionnelle appliquée après validation
                          (ex: apply_verification pour QCM)
 
+      llm              : client LLM à utiliser (par défaut, le client partagé)
+
     Retourne le dict validé (et post-traité si besoin), ou None si échec.
     """
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = client.chat.completions.create(
+            response = (llm or client).chat.completions.create(
                 model=MODEL, messages=[{"role": "user", "content": prompt}]
             )
             raw = response.choices[0].message.content

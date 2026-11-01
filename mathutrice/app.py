@@ -138,6 +138,7 @@ elif DEV_LOGIN_KEY:
 # Refuse de démarrer sans LLM_BASE_URL, LLM_API_KEY et LLM_MODEL.
 # Tout ce qui suit importe le client LLM, d'où la place de ces imports.
 from mathutrice.llm_client import client, MODEL  # noqa: E402
+from mathutrice.llm_deadline import DeadlineClient, DeadlineExceeded  # noqa: E402
 from mathutrice.fonctions_python.chatbot import (  # noqa: E402
     chat,
     chat_stream_with_history,
@@ -2151,6 +2152,9 @@ async def evaluation_endpoint(
     try:
         n = max(5, min(20, data.n_questions))
 
+        # Une seule échéance pour tout le test (Design Document #66).
+        llm = DeadlineClient(client)
+
         n_bas = max(1, round(n * 0.2))
         n_sol = max(1, round(n * 0.5))
         n_exp = max(1, n - n_bas - n_sol)
@@ -2175,6 +2179,7 @@ async def evaluation_endpoint(
             n_qro=split(n_bas)[1],
             n_steps=split(n_bas)[2],
             notion_data_override=notion_data,
+            llm=llm,
         )
 
         q_sol = generate_mixed_test(
@@ -2184,6 +2189,7 @@ async def evaluation_endpoint(
             n_qro=split(n_sol)[1],
             n_steps=split(n_sol)[2],
             notion_data_override=notion_data,
+            llm=llm,
         )
 
         q_exp = generate_mixed_test(
@@ -2193,6 +2199,7 @@ async def evaluation_endpoint(
             n_qro=split(n_exp)[1],
             n_steps=split(n_exp)[2],
             notion_data_override=notion_data,
+            llm=llm,
         )
 
         questions = q_bas + q_sol + q_exp
@@ -2217,6 +2224,15 @@ async def evaluation_endpoint(
             "notion_nom": notion_nom,
             "n_questions": len(questions),
         }
+
+    except DeadlineExceeded:
+        return JSONResponse(
+            status_code=504,
+            content={
+                "ok": False,
+                "error": "Le test n'a pas pu être préparé en 5 minutes. Réessaie dans un moment.",
+            },
+        )
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
