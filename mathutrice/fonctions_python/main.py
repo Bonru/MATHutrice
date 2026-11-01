@@ -37,6 +37,7 @@ from mathutrice.lacune_evaluation.LLM_as_Evaluator import (
     afficher_resultat,
 )
 from mathutrice.referentiel import REFERENTIEL
+from mathutrice.lacune_evaluation.LLM_as_Evaluator import _build_flat_competences  # noqa: F401
 
 # ─── NOTIONS DISPONIBLES ──────────────────────────────────────────────────────
 
