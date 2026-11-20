@@ -162,16 +162,16 @@ def parse_and_validate(raw: str) -> dict:
 # def generate_steps_test(notion: str, niveau: str, n: int) -> list[dict]:
 #     """Génère n exercices step by step."""
 #     return generate_test(notion, niveau, n, generate_steps_question)
-def generate_steps_question(notion_nom: str, competences: list[dict]) -> dict | None:
+def generate_steps_question(notion_nom: str, competences: list[dict], llm=None) -> dict | None:
     """Génère un exercice step by step à partir de compétences déjà choisies."""
 
     prompt = build_prompt(notion_nom=notion_nom, competences=competences)
 
-    return call_mistral(prompt, notion_nom, parse_and_validate)
+    return call_mistral(prompt, notion_nom, parse_and_validate, llm=llm)
 
 
 def generate_steps_test(
-    notion_nom: str, competences_groupes: list[list[dict]]
+    notion_nom: str, competences_groupes: list[list[dict]], llm=None
 ) -> list[dict]:
     """
     Génère plusieurs exercices step by step.
@@ -186,7 +186,7 @@ def generate_steps_test(
     exercices = []
 
     for competences in competences_groupes:
-        exercice = generate_steps_question(notion_nom, competences)
+        exercice = generate_steps_question(notion_nom, competences, llm=llm)
 
         if exercice is not None:
             exercice["competences_cibles"] = competences
