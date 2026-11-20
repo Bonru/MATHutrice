@@ -1,5 +1,6 @@
-# Runs the Architecture Check on every push and every pull request.
-name: CI
+# Checks every push and every pull request; deploys each green commit of the
+# default branch to Fork staging.
+name: Check, then deploy to staging
 
 # When: every push and every pull request, with no paths or branches filter,
 # so the check can be required by a ruleset (required-checks guide, step 4).
@@ -35,3 +36,36 @@ jobs:
       - run: uv sync --locked
       # Run: the tests, with no .env (tests/conftest.py sets dummy settings).
       - run: uv run pytest
+
+  image:
+    name: image
+    needs: [architecture, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # push the image to ghcr.io
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # Every run builds the image, so a pull request proves the Dockerfile.
+      - run: docker build --tag "ghcr.io/${GITHUB_REPOSITORY,,}:$GITHUB_SHA" .
+      # Only a push to the default branch publishes it, tagged with its commit.
+      - if: github.event_name == 'push' && github.ref_name == 'course-2026-fallback-clean-bench'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker push "ghcr.io/${GITHUB_REPOSITORY,,}:$GITHUB_SHA"
+
+  deploy-staging:
+    name: deploy-staging
+    # Only a pushed commit of the default branch whose checks passed.
+    if: github.event_name == 'push' && github.ref_name == 'course-2026-fallback-clean-bench'
+    needs: [architecture, test, image]
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+      commit: ${{ github.sha }}
+    secrets: inherit
