@@ -58,8 +58,17 @@ jobs:
           # Production calls its LLM through the URL the Instructor gave, kept as
           # its LLM_BASE_URL secret; staging has none and calls Mistral directly.
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://api.mistral.ai/v1' }}
+          POSTHOG_PROJECT_TOKEN: ${{ secrets.POSTHOG_PROJECT_TOKEN }}
         run: |
+          # PostHog: all three settings or none. Without the token, signals stay off.
+          posthog=()
+          if [ -n "$POSTHOG_PROJECT_TOKEN" ]; then
+            posthog=(POSTHOG_PROJECT_TOKEN="$POSTHOG_PROJECT_TOKEN"
+                     POSTHOG_HOST=https://eu.i.posthog.com
+                     POSTHOG_ENVIRONMENT="${{ inputs.environment }}")
+          fi
           az webapp config appsettings set --name "$APP" --resource-group "$GROUP" --output none --settings \
+            "${posthog[@]}" \
             AUTH_MODE=dev \
             WEBSITES_PORT=8000 \
             WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
