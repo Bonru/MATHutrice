@@ -51,6 +51,27 @@ may sign in.
 To check that a fresh clone actually works, follow
 [`docs/smoke-test.md`](docs/smoke-test.md).
 
+## How this fork is deployed
+
+The service is one process, `uvicorn mathutrice.app:app`; the job that deletes
+old conversations runs inside it. It runs from the image the `Dockerfile`
+builds, on two Azure App Service apps: Fork staging and Fork production.
+
+- **Staging, on green.** `.github/workflows/ci.yml` checks every push and pull
+  request (`architecture`, `test`). For a push to the default branch whose
+  checks passed, it builds one image tagged with the commit, pushes it to
+  `ghcr.io/bonru/mathutrice`, and deploys it to staging. Nothing is deployed
+  from a pull request, a red run, or a laptop.
+- **Production, by Promotion.** `.github/workflows/promote.yml`, started by hand
+  from the Actions tab, takes the newest run of the default branch whose staging
+  deploy passed, skipping the others, and deploys that same image to
+  production. It builds nothing.
+- **Settings.** `.github/workflows/deploy.yml` writes each app's settings at
+  every deploy. Secrets (`DEV_LOGIN_KEY`, `SESSION_SECRET`, `LLM_API_KEY`, and
+  production's `LLM_BASE_URL`) come from the `staging` and `production` GitHub
+  Environments; everything else is written in the workflow. The deploy waits
+  until `/version` answers with the deployed commit, and fails otherwise.
+
 ## Configuration
 
 Every variable the application reads is listed, with comments, in

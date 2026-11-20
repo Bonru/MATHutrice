@@ -1,0 +1,49 @@
+# The Promotion, started by hand: Fork production gets the image of staging's
+# newest green deploy, with production's own settings. It builds nothing, and
+# it reads the runs, not the staging app.
+name: Promote staging to production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pick:
+    name: pick
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      commit: ${{ steps.pick.outputs.commit }}
+    steps:
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=course-2026-fallback-clean-bench&event=push&per_page=50" \
+            --jq '.workflow_runs[] | "\(.id) \(.head_sha) \(.html_url)"')
+          while read -r id sha url; do
+            [ -n "$id" ] || continue
+            deploy=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs" \
+              --jq '.jobs[] | select(.name == "deploy-staging / deploy") | .conclusion')
+            if [ "$deploy" = "success" ]; then
+              echo "Promoting $sha, deployed to staging by $url"
+              echo "commit=$sha" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Skipping $sha ($url): its staging deploy is '${deploy:-not run}'"
+          done <<< "$runs"
+          echo "::error::no run of the default branch deployed to staging successfully"
+          exit 1
+
+  promote:
+    name: promote
+    needs: pick
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      commit: ${{ needs.pick.outputs.commit }}
+    secrets: inherit
