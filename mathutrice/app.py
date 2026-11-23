@@ -20,6 +20,8 @@ from mathutrice.database import Session as DBSession
 from apscheduler.schedulers.background import BackgroundScheduler
 from decimal import Decimal
 from mathutrice import models
+from mathutrice import observability
+import posthog
 from mathutrice.referentiel import REFERENTIEL
 from mathutrice.seed import seed_missing
 import msal
@@ -85,6 +87,11 @@ def cleanup_old_conversations():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Production signals (PostHog): all three settings, or none and nothing is sent.
+    signals = observability.read_settings()
+    app.state.posthog = observability.start_client(signals) if signals else None
+    log_provider = observability.start_logs(signals) if signals else None
+
     create_db_and_tables()
     seed_missing(engine)
 
@@ -95,6 +102,10 @@ async def lifespan(app: FastAPI):
     yield
 
     scheduler.shutdown()
+    if app.state.posthog is not None:
+        app.state.posthog.shutdown()
+    if log_provider is not None:
+        log_provider.shutdown()
 
 
 # ------------------------------------------------------------------
@@ -164,6 +175,21 @@ from mathutrice.fonctions_python.type_questions.qro_generator import (  # noqa: 
 from mathutrice.lacune_evaluation.LLM_as_Evaluator import (  # noqa: E402
     diagnostiquer_depuis_competence,
 )
+
+# Defined above SessionMiddleware, so it runs inside it, once the session is
+# loaded: each request is one PostHog context, which names the signed-in user
+# and reports an exception the request raises.
+@app.middleware("http")
+async def posthog_context(request: Request, call_next):
+    client = getattr(request.app.state, "posthog", None)
+    if client is None:
+        return await call_next(request)
+    with posthog.new_context(client=client):
+        user = request.session.get("user") or {}
+        if user.get("email"):
+            posthog.identify_context(user["email"])
+        return await call_next(request)
+
 
 app.add_middleware(
         SessionMiddleware,
