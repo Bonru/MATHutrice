@@ -1,0 +1,11 @@
+# Only what the image needs goes into the build: a local .env, database or
+# virtual environment can never reach it.
+*
+!pyproject.toml
+!uv.lock
+!.python-version
+!mathutrice
+mathutrice/rag_documents
+**/__pycache__
+**/*.db
+**/.env*

@@ -1,0 +1,94 @@
+# Deploys one image, already built and pushed, to one environment.
+# Called by CI (staging, after the checks pass) and by the Promotion
+# (production, started by hand). It builds nothing.
+name: Deploy an image
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: staging or production, the GitHub Environment to deploy to
+        required: true
+        type: string
+      commit:
+        description: the commit whose image to run; the image is tagged with it
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write   # sign in to Azure as the github-deploy identity, no password
+      contents: read
+    env:
+      COMMIT: ${{ inputs.commit }}
+      APP: ${{ vars.AZURE_WEBAPP_NAME }}
+      GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+    steps:
+      - name: Refuse an environment without its secrets
+        env:
+          DEV_LOGIN_KEY: ${{ secrets.DEV_LOGIN_KEY }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          missing=""
+          [ -n "$DEV_LOGIN_KEY" ] || missing="$missing DEV_LOGIN_KEY"
+          [ -n "$SESSION_SECRET" ] || missing="$missing SESSION_SECRET"
+          [ -n "$LLM_API_KEY" ] || missing="$missing LLM_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::${{ inputs.environment }} has no secret:$missing"
+            exit 1
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Write the app's settings
+        env:
+          DEV_LOGIN_KEY: ${{ secrets.DEV_LOGIN_KEY }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          # Production calls its LLM through the URL the Instructor gave, kept as
+          # its LLM_BASE_URL secret; staging has none and calls Mistral directly.
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL || 'https://api.mistral.ai/v1' }}
+        run: |
+          az webapp config appsettings set --name "$APP" --resource-group "$GROUP" --output none --settings \
+            AUTH_MODE=dev \
+            WEBSITES_PORT=8000 \
+            WEBSITES_ENABLE_APP_SERVICE_STORAGE=false \
+            DATABASE_URL=sqlite:///./mathutrice.db \
+            LLM_MODEL=ministral-14b-latest \
+            LLM_BASE_URL="$LLM_BASE_URL" \
+            LLM_API_KEY="$LLM_API_KEY" \
+            DEV_LOGIN_KEY="$DEV_LOGIN_KEY" \
+            SESSION_SECRET="$SESSION_SECRET" \
+            GIT_COMMIT="$COMMIT"
+
+      - name: Run the commit's image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}:$COMMIT"
+          az webapp config container set --name "$APP" --resource-group "$GROUP" \
+            --container-image-name "$image" --output none
+          echo "$APP now runs $image"
+
+      - name: Wait until the app answers with this commit
+        run: |
+          url="https://$(az webapp show --name "$APP" --resource-group "$GROUP" --query defaultHostName -o tsv)/version"
+          for attempt in $(seq 60); do
+            served=$(curl -s --max-time 10 "$url" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit",""))' 2>/dev/null || true)
+            if [ "$served" = "$COMMIT" ]; then
+              echo "$url answers $served"
+              exit 0
+            fi
+            echo "attempt $attempt: $url answers '${served:-nothing}', waiting for $COMMIT"
+            sleep 10
+          done
+          echo "::error::$APP did not answer with $COMMIT within 10 minutes; read its log stream in the Azure portal"
+          exit 1

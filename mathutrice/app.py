@@ -310,6 +310,12 @@ def sign_in(
 # ------------------------------------------------------------------
 
 
+@app.get("/version")
+async def version():
+    """The commit this process runs, as the deploy wrote it in GIT_COMMIT."""
+    return {"commit": os.getenv("GIT_COMMIT", "unknown")}
+
+
 @app.get("/test_login")
 async def login(request: Request):
     if AUTH_MODE == "dev":
