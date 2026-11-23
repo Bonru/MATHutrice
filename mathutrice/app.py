@@ -1173,6 +1173,7 @@ async def chat_complete_endpoint(data: ChatRequest):
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={
@@ -1304,6 +1305,7 @@ async def reset_session_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(e)},
@@ -1424,6 +1426,7 @@ async def positioning_endpoint(
         return JSONResponse(status_code=400, content={"ok": False, "error": str(e)})
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 
@@ -1461,6 +1464,7 @@ async def next_question_endpoint(
         return JSONResponse(status_code=400, content={"ok": False, "error": str(e)})
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 
@@ -1502,6 +1506,7 @@ async def submit_answer_endpoint(
         return {"ok": True, "new_scores": result}
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 
@@ -1573,6 +1578,7 @@ async def get_scores_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(e)},
@@ -1667,6 +1673,7 @@ async def save_session_history_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(e)},
@@ -1744,6 +1751,7 @@ async def get_session_history_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(e)},
@@ -1780,6 +1788,7 @@ async def evaluate_qro_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 
@@ -1965,6 +1974,7 @@ async def feedback_endpoint(
                         break
 
             except Exception as reco_err:
+                observability.report(reco_err)
                 print("Reco error:", reco_err)
 
         return {
@@ -1975,6 +1985,7 @@ async def feedback_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         print("FEEDBACK ERROR:", traceback.format_exc())
 
         return JSONResponse(
@@ -2072,6 +2083,7 @@ async def next_targeted_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         print("NEXT_TARGETED ERROR:", traceback.format_exc())
 
         return JSONResponse(
@@ -2149,6 +2161,7 @@ async def mark_training_started(
         return {"ok": True}
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(e)},
@@ -2257,7 +2270,8 @@ async def evaluation_endpoint(
             "n_questions": len(questions),
         }
 
-    except DeadlineExceeded:
+    except DeadlineExceeded as e:
+        observability.report(e)
         return JSONResponse(
             status_code=504,
             content={
@@ -2267,6 +2281,7 @@ async def evaluation_endpoint(
         )
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
 
@@ -2348,6 +2363,7 @@ async def get_recommendations_endpoint(
         }
 
     except Exception as e:
+        observability.report(e)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(e)},

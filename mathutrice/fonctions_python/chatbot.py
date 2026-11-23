@@ -1,3 +1,4 @@
+from mathutrice import observability
 from mathutrice.llm_client import client, MODEL
 
 system_prompt = """Tu es MATHutrice, une tutrice IA specialisee en mathematiques.
@@ -43,6 +44,7 @@ def chat_stream_with_history(history: list[dict]):
                     yield chunk
 
     except Exception as e:
+        observability.report(e)
         yield f"Erreur: {str(e)}"
 
     return full_response
@@ -66,6 +68,7 @@ def chat(user_input: str) -> str:
         messages_history.append({"role": "assistant", "content": reply})
         return reply
     except Exception as e:
+        observability.report(e)
         messages_history.pop()
         return f"Erreur: {str(e)}"
 
@@ -91,6 +94,7 @@ def chat_stream(user_input: str):
         messages_history.append({"role": "assistant", "content": full_response})
 
     except Exception as e:
+        observability.report(e)
         messages_history.pop()
         yield f"Erreur: {str(e)}"
 
