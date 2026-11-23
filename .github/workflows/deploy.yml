@@ -20,6 +20,11 @@ jobs:
     name: deploy
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    # One deploy per environment at a time, in order: two merges a few seconds
+    # apart must not deploy side by side, or the older could land last.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
     permissions:
       id-token: write   # sign in to Azure as the github-deploy identity, no password
       contents: read
