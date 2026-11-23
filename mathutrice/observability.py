@@ -15,6 +15,9 @@ import os
 
 SETTINGS = ("POSTHOG_PROJECT_TOKEN", "POSTHOG_HOST", "POSTHOG_ENVIRONMENT")
 
+# The process's PostHog client, set by start_client; None when signals are off.
+client = None
+
 
 def read_settings() -> dict | None:
     """The three settings, or None when none is set."""
@@ -29,14 +32,27 @@ def read_settings() -> dict | None:
 
 def start_client(settings: dict):
     """The PostHog client for this process: errors, tagged with the environment."""
+    global client
     from posthog import Posthog
 
-    return Posthog(
+    client = Posthog(
         settings["POSTHOG_PROJECT_TOKEN"],
         host=settings["POSTHOG_HOST"],
         enable_exception_autocapture=True,
         super_properties={"environment": settings["POSTHOG_ENVIRONMENT"]},
     )
+    return client
+
+
+def report(exception: BaseException) -> None:
+    """Reports an exception the code caught and answered for itself.
+
+    Called before the code answers, inside the request's PostHog context, so
+    the error names the signed-in user. With signals off, does nothing; it
+    never changes the answer.
+    """
+    if client is not None:
+        client.capture_exception(exception)
 
 
 def start_logs(settings: dict):

@@ -12,6 +12,7 @@ La correction se fait par comparaison souple (normalisation de la chaîne)
 + un second appel Mistral en mode "correcteur" pour les cas ambigus.
 """
 
+from mathutrice import observability
 from mathutrice.fonctions_python.base_generator import (
     call_mistral,
     generate_test,
@@ -162,6 +163,7 @@ def is_correct_llm(
         return correct, feedback
 
     except Exception as e:
+        observability.report(e)
         logger.warning(
             f"Correction LLM échouée : {e}. Fallback sur comparaison simple."
         )
