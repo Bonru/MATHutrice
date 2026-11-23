@@ -336,6 +336,13 @@ def sign_in(
 # ------------------------------------------------------------------
 
 
+# TEMPORARY (Lab 3, step 5): proves the PostHog wiring with our own exception.
+# Remove once the exception has been seen in PostHog Error tracking.
+@app.get("/lab3/boom")
+async def lab3_boom():
+    raise RuntimeError("Lab 3 step 5: Bruno's own exception, to prove the PostHog wiring")
+
+
 @app.get("/version")
 async def version():
     """The commit this process runs, as the deploy wrote it in GIT_COMMIT."""
